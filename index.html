@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Time Renew 2026 — Generador de Horarios Escolares 100% Offline para Windows</title>
+  <meta name="description" content="Genera horarios escolares y universitarios sin choques ni horas puente con Google OR-Tools CP-SAT. Importa archivos de aSc (.xml/.ziptt), 100% offline en Windows.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+
+  <!-- Barra de entorno Paddle Sandbox para pruebas -->
+  <div class="sandbox-bar" role="region" aria-label="Modo de pruebas Paddle Sandbox">
+    <div class="sandbox-bar__inner">
+      <div class="sandbox-bar__left">
+        <span class="sandbox-pill">Paddle Sandbox · Modo Prueba</span>
+        <span>Prueba el checkout real sin cargo usando la tarjeta de prueba <code class="mono">4242 4242 4242 4242</code> (cualquier fecha futura y CVC).</span>
+      </div>
+      <button type="button" class="sandbox-copy-btn" id="copy-test-card">Copiar tarjeta de prueba</button>
+    </div>
+  </div>
+
+  <!-- Navegación -->
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a href="#inicio" class="brand">
+        <img src="favicon.svg" width="28" height="28" alt="Time Renew">
+        <span>Time Renew</span>
+        <span class="brand__tag">v1.3.2</span>
+      </a>
+      <nav class="nav" aria-label="Navegación principal">
+        <a href="#motor">Cómo funciona</a>
+        <a href="#encaje">Para quién es</a>
+        <a href="#precios">Precios</a>
+        <a href="#faq">Preguntas</a>
+      </nav>
+      <div class="header-actions">
+        <a href="#precios" class="btn btn--secondary">Ver planes</a>
+        <a href="#prueba" class="btn btn--primary">Probar gratis</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="inicio">
+    <!-- Hero asimétrico con artefacto interactivo de cuadrícula -->
+    <section class="hero">
+      <div class="container hero__grid">
+        <div>
+          <div class="eyebrow">
+            <span class="eyebrow__dot" aria-hidden="true"></span>
+            <span>Windows 64 bits · 100% Offline-First · Motor Google OR-Tools</span>
+          </div>
+          <h1 class="hero__title">Cuadra los horarios de tu centro sin choques ni horas puente.</h1>
+          <p class="hero__subtitle">
+            Time Renew reemplaza semanas peleando con Excel por un motor matemático multinúcleo que respeta bloqueos docentes, aulas especiales y desdobles. Los datos de tu claustro nunca salen de tu ordenador.
+          </p>
+          <div class="hero__cta">
+            <a href="#precios" class="btn btn--primary btn--lg">Probar checkout Sandbox</a>
+            <a href="#motor" class="btn btn--secondary btn--lg">Ver cómo resuelve</a>
+          </div>
+          <div class="hero__facts">
+            <div class="fact">
+              <strong>Importa aSc Horarios</strong>
+              Lee tus <code class="mono">.xml</code> y <code class="mono">.ziptt</code> al instante
+            </div>
+            <div class="fact">
+              <strong>Hasta 32 tramos/día</strong>
+              Mañana, tarde, noche y timbres propios
+            </div>
+            <div class="fact">
+              <strong>RGPD sin nube</strong>
+              Base local SQLite en tu PC Windows
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulador interactivo de cuadrícula Time Renew -->
+        <div class="app-frame" aria-label="Simulador interactivo de cuadrícula Time Renew">
+          <div class="app-frame__bar">
+            <div class="app-frame__title">
+              <span>Diagnóstico de Horario · Secundaria / FP</span>
+            </div>
+            <div class="seg-toggle" role="group" aria-label="Comparar antes y después">
+              <button type="button" class="seg-toggle__btn" id="mode-before" aria-pressed="false">Antes (Excel)</button>
+              <button type="button" class="seg-toggle__btn" id="mode-after" aria-pressed="true">Después (CP-SAT)</button>
+            </div>
+          </div>
+
+          <div class="app-frame__status">
+            <span id="grid-status-badge" class="status-badge status-badge--ok">0 colisiones · Calidad 98%</span>
+            <span class="mono" id="grid-status-detail">Máx. 4 h seguidas · 0 huecos alumnos</span>
+          </div>
+
+          <div class="tt-grid-wrap">
+            <table class="tt-grid" id="timetable-preview">
+              <thead>
+                <tr>
+                  <th>Tramo</th>
+                  <th>2º ESO A</th>
+                  <th>2º ESO B</th>
+                  <th>1º Bach. A</th>
+                </tr>
+              </thead>
+              <tbody id="timetable-body">
+                <!-- Rellenado dinámicamente por app.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="app-frame__footer">
+            <span>🔒 Ficha anclada por dirección</span>
+            <span>✕ Disponibilidad docente respetada</span>
+            <span>Exportable a PDF con logo y Excel</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ingeniería real -->
+    <section id="motor" class="section">
+      <div class="container">
+        <div class="section__head">
+          <span class="section__kicker">Ingeniería verificada</span>
+          <h2 class="section__title">Diseñado para resolver el rompecabezas real de jefatura de estudios.</h2>
+          <p class="section__desc">
+            Sin promesas vagas: estas son las reglas que el motor CP-SAT ejecuta hoy dentro de la aplicación de escritorio v1.3.2.
+          </p>
+        </div>
+
+        <div class="cards-4">
+          <article class="feature-card">
+            <div class="feature-card__icon">CP</div>
+            <h3>Motor Google OR-Tools</h3>
+            <p>Usa todos los núcleos de tu procesador para impedir colisiones de grupos, profesores y aulas o laboratorios, compactando los huecos del alumnado.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-card__icon">XML</div>
+            <h3>Importa desde aSc</h3>
+            <p>Abre directamente exportaciones <code class="mono">.xml</code> (asctt2012) y paquetes <code class="mono">.ziptt</code> de aSc Horarios sin volver a picar decenas de docentes.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-card__icon">🔒</div>
+            <h3>Anclaje y fatiga docente</h3>
+            <p>Fija manualmente las fichas intocables (<code class="mono">is_locked</code>), marca bloqueos estrictos (<code class="mono">✕</code>) o suaves (<code class="mono">?</code>) y limita a 4 h seguidas por profe.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-card__icon">0%</div>
+            <h3>Auditoría 0–100% y PDF</h3>
+            <p>Verifica en tiempo real horas puente, excesos de carga y colisiones. Imprime horarios por curso con escala compacta, colores y el logo del centro.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Encaje honesto -->
+    <section id="encaje" class="section section--alt">
+      <div class="container">
+        <div class="section__head">
+          <span class="section__kicker">Transparencia técnica</span>
+          <h2 class="section__title">¿Es Time Renew para tu centro?</h2>
+          <p class="section__desc">
+            Preferimos decirte qué resuelve y qué no antes de que descargues la prueba gratuita.
+          </p>
+        </div>
+
+        <div class="fit-grid">
+          <div class="fit-box fit-box--yes">
+            <h3>Encaja contigo si…</h3>
+            <ul class="check-list">
+              <li><span class="check-mark check-mark--yes">✓</span><span>Eres colegio privado o concertado (Primaria, ESO, Bachillerato), academia grupal o centro de FP con <strong>ordenadores Windows</strong>.</span></li>
+              <li><span class="check-mark check-mark--yes">✓</span><span>Eres facultad, sede regional o instituto superior con <strong>malla fija por cohorte/semestre</strong> (hasta 32 tramos al día).</span></li>
+              <li><span class="check-mark check-mark--yes">✓</span><span>Hoy armas horarios en Excel, papel o quieres dejar de pagar cuotas altas de mantenimiento en aSc/Peñalara.</span></li>
+              <li><span class="check-mark check-mark--yes">✓</span><span>Exiges privacidad RGPD sin nube o trabajas en zonas con internet inestable.</span></li>
+            </ul>
+          </div>
+
+          <div class="fit-box fit-box--no">
+            <h3>Todavía no te encaja si…</h3>
+            <ul class="check-list">
+              <li><span class="check-mark check-mark--no">—</span><span>Tu equipo directivo trabaja exclusivamente en <strong>MacBook, Linux o Chromebooks</strong> (por ahora solo hay versión Windows 64 bits).</span></li>
+              <li><span class="check-mark check-mark--no">—</span><span>Tu prioridad hoy es un módulo diario de <strong>guardias y sustituciones</strong> o app móvil en vivo para padres.</span></li>
+              <li><span class="check-mark check-mark--no">—</span><span>Eres una universidad de matrícula abierta por créditos sueltos que necesita API/SSO con Banner, SAP o iSAMS.</span></li>
+              <li><span class="check-mark check-mark--no">—</span><span>Necesitas la interfaz en inglés, portugués u otro idioma distinto al español (en desarrollo).</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Precios & Paddle Checkout -->
+    <section id="precios" class="section">
+      <div class="container">
+        <div class="pricing-top">
+          <div class="section__head">
+            <span class="section__kicker">Precios claros</span>
+            <h2 class="section__title">Prueba gratis con tus datos. Activa cuando te funcione.</h2>
+            <p class="section__desc">
+              Cobro seguro mediante <strong>Paddle</strong> (Merchant of Record): emite factura con IVA europeo o <em>reverse charge</em> con tu NIF-IVA en España, y soporta tarjetas, PayPal, Apple Pay y Google Pay.
+            </p>
+          </div>
+
+          <div class="seg-toggle" role="group" aria-label="Elegir región y moneda">
+            <button type="button" class="seg-toggle__btn" id="region-eu" aria-pressed="true">España / UE (EUR €)</button>
+            <button type="button" class="seg-toggle__btn" id="region-latam" aria-pressed="false">Latinoamérica (USD)</button>
+          </div>
+        </div>
+
+        <div id="prueba" class="trial-strip">
+          <div>
+            <strong>Prueba Gratuita Funcional (<span class="mono" id="price-trial">€0</span> · Sin tarjeta)</strong>
+            <span>Carga tus docentes, aulas y restricciones o importa tu <code class="mono">.xml</code>/<code class="mono">.ziptt</code> de aSc y ejecuta el motor completo. Solo la exportación limpia a PDF/Excel requiere licencia activa.</span>
+          </div>
+          <a href="https://github.com/AdriP-maker/Time_Renew/releases" target="_blank" rel="noopener" class="btn btn--secondary">Ver notas de versión v1.3.2</a>
+        </div>
+
+        <div id="checkout-warning" class="alert-inline" hidden></div>
+
+        <div class="pricing-grid">
+          <!-- Plan Mensual -->
+          <article class="plan-card">
+            <h3 class="plan-card__name">Mensual · Temporada</h3>
+            <p class="plan-card__sub">Para academias por ciclos, centros con ajustes puntuales o pago mes a mes sin permanencia.</p>
+            <div class="plan-price">
+              <span class="plan-price__amount" data-price="monthly">€18</span>
+              <span class="plan-price__period">/ mes</span>
+            </div>
+            <p class="plan-price__note">Cancela o pausa cuando termines tus horarios.</p>
+            <ul class="plan-features">
+              <li>1 equipo Windows 64 bits</li>
+              <li>Exportaciones limpias PDF con logo y Excel</li>
+              <li>Importador aSc (.xml / .ziptt) y verificador 0–100%</li>
+              <li>Actualizaciones incluidas mientras esté activo</li>
+            </ul>
+            <button type="button" class="btn btn--secondary btn--full js-paddle-buy" data-plan="monthly">
+              Probar pago Mensual (Sandbox)
+            </button>
+          </article>
+
+          <!-- Plan Anual (Destacado) -->
+          <article class="plan-card plan-card--featured">
+            <span class="plan-badge">Recomendado · Mejor valor</span>
+            <h3 class="plan-card__name">Anual · Institucional</h3>
+            <p class="plan-card__sub">Para colegios privados/concertados, institutos de FP y facultades por cohorte durante todo el curso.</p>
+            <div class="plan-price">
+              <span class="plan-price__amount" data-price="annual">€92</span>
+              <span class="plan-price__period">/ año</span>
+            </div>
+            <p class="plan-price__note" data-note="annual">Equivale a €7,67/mes · Ahorra un 57% frente al plan mensual.</p>
+            <ul class="plan-features">
+              <li>Hasta 2 equipos Windows del mismo centro</li>
+              <li><strong>Migración asistida inicial</strong> desde Excel o aSc XML</li>
+              <li>Soporte prioritario en español por correo</li>
+              <li>Todas las mejoras del curso + <strong>garantía 14 días</strong></li>
+            </ul>
+            <button type="button" class="btn btn--primary btn--full js-paddle-buy" data-plan="annual">
+              Probar pago Anual (Sandbox)
+            </button>
+          </article>
+
+          <!-- Licencia Única -->
+          <article class="plan-card">
+            <h3 class="plan-card__name">Licencia Única · Perpetua v1.x</h3>
+            <p class="plan-card__sub">Para centros que prefieren un único pago sin suscripciones anuales y uso offline permanente.</p>
+            <div class="plan-price">
+              <span class="plan-price__amount" data-price="perpetual">€229</span>
+              <span class="plan-price__period">pago único</span>
+            </div>
+            <p class="plan-price__note">Sin bloqueos si no renuevas mantenimiento tras el año 1.</p>
+            <ul class="plan-features">
+              <li>Hasta 3 equipos Windows del mismo centro</li>
+              <li>Uso perpetuo offline de toda la serie v1.x</li>
+              <li>12 meses de actualizaciones y soporte incluidos</li>
+              <li>Garantía de reembolso de 14 días</li>
+            </ul>
+            <button type="button" class="btn btn--ink btn--full js-paddle-buy" data-plan="perpetual">
+              Probar Licencia Única (Sandbox)
+            </button>
+          </article>
+        </div>
+
+        <!-- Convenio Volumen -->
+        <div class="volume-card">
+          <div>
+            <span class="section__kicker">Redes escolares, entes públicos y distribuidores</span>
+            <h3 style="margin:0 0 8px; font-family:var(--font-display); font-size:22px;">Convenio Volumen (mínimo 10 centros)</h3>
+            <p style="margin:0 0 12px; color:var(--ink-secondary); font-size:15px;">
+              Pensado para redes educativas, direcciones regionales y distribuidores TIC locales que necesitan desplegar Time Renew en múltiples centros a menor coste unitario anual. En Panamá emitimos factura local directa; para el resto de países trabajamos vía Paddle o distribuidor autorizado.
+            </p>
+            <p style="margin:0; font-size:13.5px; color:var(--ink-muted);">
+              Tarifa unitaria: <strong class="mono" data-price="volumeUnit">€39</strong> / centro / año en UE · <strong class="mono">USD 42</strong> / centro / año en LatAm.
+            </p>
+          </div>
+
+          <div class="volume-controls">
+            <div class="volume-row">
+              <label for="volume-qty" style="font-weight:600; font-size:14px;">Número de centros:</label>
+              <span class="mono" id="volume-qty-label" style="font-size:18px; font-weight:700; color:var(--blue);">10 centros</span>
+            </div>
+            <input type="range" id="volume-qty" class="volume-range" min="10" max="100" step="5" value="10">
+            <div class="volume-total">
+              <span style="font-size:13.5px; color:var(--ink-secondary);">Total anual estimado:</span>
+              <strong class="mono" id="volume-total-amount" style="font-size:24px;">€390 / año</strong>
+            </div>
+            <button type="button" class="btn btn--primary btn--full js-paddle-buy" data-plan="volume">
+              Probar Convenio Volumen (Sandbox)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="section section--alt">
+      <div class="container">
+        <div class="section__head">
+          <span class="section__kicker">Preguntas frecuentes</span>
+          <h2 class="section__title">Dudas reales de dirección y administración.</h2>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item">
+            <button type="button" class="faq-trigger" aria-expanded="true">
+              <span>¿Cómo cumple con el RGPD si los datos de profesores están en el programa?</span>
+              <span aria-hidden="true">−</span>
+            </button>
+            <div class="faq-panel">
+              Time Renew es 100% <em>Offline-First</em> en Windows: toda la base de datos SQLite se guarda exclusivamente en el disco duro de tu centro. Phoenix Software Solutions no recibe, almacena ni procesa listas de docentes ni horarios en servidores en la nube.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-trigger" aria-expanded="false">
+              <span>¿Emiten factura válida con IVA europeo o NIF-IVA en España?</span>
+              <span aria-hidden="true">+</span>
+            </button>
+            <div class="faq-panel" hidden>
+              Sí. Los pagos internacionales se procesan a través de <strong>Paddle</strong> (Merchant of Record), que emite factura fiscal conforme a la normativa europea: aplica el IVA del país correspondiente o la inversión del sujeto pasivo (0% IVA) cuando introduces un NIF-IVA intracomunitario válido en el checkout.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-trigger" aria-expanded="false">
+              <span>¿Qué pasa en México con el CFDI o en Panamá con la facturación local?</span>
+              <span aria-hidden="true">+</span>
+            </button>
+            <div class="faq-panel" hidden>
+              En <strong>Panamá</strong> (sede de Phoenix Software Solutions) facturamos y cobramos localmente de forma directa, incluso para fondos escolares oficiales. En <strong>México</strong>, Paddle emite recibo/factura comercial internacional (sin timbre CFDI ante el SAT); si tu institución exige CFDI local deducible, trabajamos mediante distribuidores autorizados bajo convenio volumen.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-trigger" aria-expanded="false">
+              <span>Ya tengo mi horario en aSc Horarios, ¿tengo que empezar de cero?</span>
+              <span aria-hidden="true">+</span>
+            </button>
+            <div class="faq-panel" hidden>
+              No. Exporta tu archivo desde aSc en formato XML (<code class="mono">Archivo &gt; Exportar &gt; aSc Timetables XML asctt2012</code>) o paquete <code class="mono">.ziptt</code> e impórtalo directamente en Time Renew. Si eliges el Plan Anual, además te ayudamos en la migración inicial.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-trigger" aria-expanded="false">
+              <span>¿Cómo funciona la garantía de 14 días?</span>
+              <span aria-hidden="true">+</span>
+            </button>
+            <div class="faq-panel" hidden>
+              Primero puedes probar el motor con tus datos reales antes de pagar. Si aun así activas el Plan Anual o la Licencia Única y en los primeros 14 días ves que no encaja con tu centro, tramitamos el reembolso íntegro a través de Paddle sin penalizaciones.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>Phoenix Software Solutions</strong> · Time Renew 2026 · Empresa constituida en Panamá
+      </div>
+      <div class="footer-links">
+        <a href="terminos.html">Términos y Licencia (EULA)</a>
+        <a href="privacidad.html">Privacidad (Offline-First)</a>
+        <a href="reembolsos.html">Política de Reembolsos (14 días)</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal de confirmación post-pago Sandbox -->
+  <div class="modal-backdrop" id="success-modal" hidden role="dialog" aria-modal="true" aria-labelledby="success-title">
+    <div class="modal-box">
+      <div class="status-badge status-badge--ok" style="margin-bottom:12px;">Pago Sandbox completado</div>
+      <h3 id="success-title">Checkout de prueba verificado</h3>
+      <p style="margin:0; font-size:14.5px; color:var(--ink-secondary);">
+        Paddle.js completó correctamente el flujo en entorno Sandbox. En producción, aquí se emitiría la clave de licencia y la factura fiscal al correo del centro.
+      </p>
+      <div class="modal-meta" id="success-details"></div>
+      <button type="button" class="btn btn--primary btn--full" id="close-success-modal">Cerrar y volver a la página</button>
+    </div>
+  </div>
+
+</body>
+</html>
